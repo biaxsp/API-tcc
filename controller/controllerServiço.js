@@ -6,6 +6,7 @@
 
 const servicoDAO = require('../dao/servicosDAO.js');
 const message = require('../config/config.js');
+const { parseDuracao, parsePreco } = require('../utils'); 
 
 // ====================== POST ======================
 const createServico = async function (dadosBody, contentType) {
@@ -13,26 +14,41 @@ const createServico = async function (dadosBody, contentType) {
     let status_code;
     let mensagem = {};
 
+    // Verificar se o tipo de conteúdo é JSON
     if (contentType === 'application/json') {
+        // Verificar se o campo nome_servico está presente
         if (dadosBody.nome_servico == '' || dadosBody.nome_servico == undefined) {
-            status_code = 400;
-            mensagem.message = message.ERROR_REQUIRED_FIELDS;
+            status_code = 400;  // Bad Request
+            mensagem.message = 'Campos obrigatórios faltando.';
         } else {
-            let novoServico = await servicoDAO.insertServico(dadosBody);
+            // Conversão de 'duracao' para minutos e 'preco' para número
+            const duracaoConvertida = parseDuracao(dadosBody.duracao);
+            const precoConvertido = parsePreco(dadosBody.preco);
+
+            // Preparar os dados para enviar para a DAO
+            const dadosServico = {
+                nome_servico: dadosBody.nome_servico,
+                descricao: dadosBody.descricao,
+                duracao: duracaoConvertida,  // Duração convertida para minutos
+                preco: precoConvertido       // Preço convertido para número
+            };
+
+            // Inserção do serviço na DAO
+            let novoServico = await servicoDAO.insertServico(dadosServico);
 
             if (novoServico) {
                 status = true;
-                status_code = 201;
-                mensagem.message = message.SUCCESS_CREATED_ITEM;
+                status_code = 201;  // Created
+                mensagem.message = 'Serviço criado com sucesso!';
                 mensagem.servico = novoServico;
             } else {
-                status_code = 500;
-                mensagem.message = message.ERROR_INTERNAL_SERVER;
+                status_code = 500;  // Internal Server Error
+                mensagem.message = 'Erro interno ao criar o serviço.';
             }
         }
     } else {
-        status_code = 415;
-        mensagem.message = message.ERROR_INCORRECT_CONTENT_TYPE;
+        status_code = 415;  // Unsupported Media Type
+        mensagem.message = 'Tipo de conteúdo incorreto. Por favor, envie dados no formato JSON.';
     }
 
     return {
@@ -41,7 +57,8 @@ const createServico = async function (dadosBody, contentType) {
         message: mensagem.message,
         servico: mensagem.servico
     };
-}
+};
+
 
 // ====================== PUT ======================
 const updateServico = async function (dadosBody, contentType) {

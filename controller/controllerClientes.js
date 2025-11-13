@@ -141,6 +141,7 @@ const getClientes = async function () {
 }
 
 const getClienteById = async function (id) {
+    console.log(id)
     let status = false;
     let status_code;
     let mensagem = {};
@@ -181,6 +182,21 @@ const getClientesComAgendamentos = async function () {
 
     let dados = await clienteDAO.selectClientesComAgendamentos();
 
+    // Função para substituir BigInt por String
+    const convertBigIntToString = (obj) => {
+        if (Array.isArray(obj)) {
+            return obj.map(convertBigIntToString); // Aplica recursivamente em arrays
+        } else if (obj !== null && typeof obj === 'object') {
+            return Object.fromEntries(
+                Object.entries(obj).map(([key, value]) => [
+                    key,
+                    typeof value === 'bigint' ? value.toString() : convertBigIntToString(value),
+                ])
+            );
+        }
+        return obj;
+    };
+
     if (dados) {
         if (dados.length > 0) {
             status = true;
@@ -195,6 +211,9 @@ const getClientesComAgendamentos = async function () {
         mensagem.message = message.ERROR_INTERNAL_SERVER;
     }
 
+    // Convertendo os dados para garantir que BigInt seja transformado em String
+    mensagem = convertBigIntToString(mensagem);
+
     return {
         status: status,
         status_code: status_code,
@@ -203,11 +222,13 @@ const getClientesComAgendamentos = async function () {
     };
 }
 
+
 const getClienteComAgendamentosById = async function (id) {
     let status = false;
     let status_code;
     let mensagem = {};
 
+    // Validação do ID
     if (id == '' || id == undefined || isNaN(id)) {
         status_code = 400;
         mensagem.message = message.ERROR_INVALID_ID;
@@ -229,6 +250,24 @@ const getClienteComAgendamentosById = async function (id) {
         }
     }
 
+    // Função para substituir BigInt por String
+    const convertBigIntToString = (obj) => {
+        if (Array.isArray(obj)) {
+            return obj.map(convertBigIntToString); // Aplica recursivamente em arrays
+        } else if (obj !== null && typeof obj === 'object') {
+            return Object.fromEntries(
+                Object.entries(obj).map(([key, value]) => [
+                    key,
+                    typeof value === 'bigint' ? value.toString() : convertBigIntToString(value),
+                ])
+            );
+        }
+        return obj;
+    };
+
+    // Convertendo os dados de mensagem para garantir que BigInt seja transformado em String
+    mensagem = convertBigIntToString(mensagem);
+
     return {
         status: status,
         status_code: status_code,
@@ -236,6 +275,7 @@ const getClienteComAgendamentosById = async function (id) {
         message: mensagem.message || null
     };
 }
+
 
 module.exports = {
     createCliente,
